@@ -1,6 +1,5 @@
 {
   "config": {
-    "title": "Carpark Australia",
     "abort": {
       "already_configured": "This instance is already configured.",
       "reauth_successful": "The API key was updated."
