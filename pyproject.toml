@@ -1,0 +1,49 @@
+# Tooling configuration for the ha-carpark-australia Home Assistant integration repo.
+[project]
+name = "ha-carpark-australia"
+version = "0.0.0"
+description = "Australian carpark availability integration for Home Assistant (HACS custom component)"
+requires-python = ">=3.14.2"
+
+[dependency-groups]
+dev = [
+    "pytest-homeassistant-custom-component==0.13.367",
+    "mypy==2.3.1",
+    "ruff==0.16.9",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "PTH", "ASYNC", "ANN", "D"]
+ignore = [
+    "D203",
+    "D213",
+    "ANN401",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",
+    "ANN",
+    "D",
+]
+
+[tool.mypy]
+python_version = "3.14"
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = false
+files = ["custom_components/carpark_australia"]
+explicit_package_bases = true
+mypy_path = "."
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]

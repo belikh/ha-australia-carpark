@@ -1,0 +1,13 @@
+{
+  "domain": "carpark_australia",
+  "name": "Carpark Australia",
+  "codeowners": ["@belikh"],
+  "config_flow": true,
+  "dependencies": ["zone"],
+  "documentation": "https://github.com/belikh/ha-carpark-australia",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/belikh/ha-carpark-australia/issues",
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

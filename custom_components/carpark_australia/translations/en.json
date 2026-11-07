@@ -1,0 +1,86 @@
+{
+  "config": {
+    "title": "Carpark Australia",
+    "abort": {
+      "already_configured": "This instance is already configured.",
+      "reauth_successful": "The API key was updated."
+    },
+    "error": {
+      "api_key_required": "An API key is required.",
+      "zone_required": "Choose a zone."
+    },
+    "step": {
+      "user": {
+        "title": "Carpark Australia",
+        "description": "Choose the data sources to poll. Transport for NSW needs an API key from developer.transport.nsw.gov.au.",
+        "data": {
+          "providers": "Data sources",
+          "scan_interval_hours": "Refresh interval (minutes)",
+          "api_key": "Transport for NSW API key"
+        }
+      },
+      "scope": {
+        "title": "Area to track",
+        "description": "Choose the area to count parking spaces in. Tracking every car park in Australia creates a lot of entities.",
+        "data": {
+          "scope": "Area"
+        }
+      },
+      "scope_home": {
+        "title": "Radius",
+        "description": "How far from the Home Assistant location should parking spaces be counted?",
+        "data": {
+          "scope_radius": "Radius (metres)"
+        }
+      },
+      "scope_zone": {
+        "title": "Zone",
+        "description": "Parking spaces are counted for the car parks inside this zone.",
+        "data": {
+          "scope_zone": "Zone"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Transport for NSW API key",
+        "description": "The API key was rejected. Enter a working key.",
+        "data": {
+          "api_key": "Transport for NSW API key"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Carpark Australia options",
+        "description": "Adjust the data sources, the area to track and the refresh interval.",
+        "data": {
+          "providers": "Data sources",
+          "scan_interval_hours": "Refresh interval (minutes)",
+          "api_key": "Transport for NSW API key",
+          "scope": "Area",
+          "scope_radius": "Radius (metres)",
+          "scope_zone": "Zone"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "spaces_free": {
+        "name": "Spaces free"
+      },
+      "occupancy": {
+        "name": "Occupancy"
+      },
+      "total_spaces": {
+        "name": "Total spaces"
+      }
+    },
+    "binary_sensor": {
+      "spaces_available": {
+        "name": "Spaces available"
+      }
+    }
+  }
+}
