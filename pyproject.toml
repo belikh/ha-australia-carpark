@@ -1,6 +1,6 @@
-# Tooling configuration for the ha-carpark-australia Home Assistant integration repo.
+# Tooling configuration for the ha-australia-carpark Home Assistant integration repo.
 [project]
-name = "ha-carpark-australia"
+name = "ha-australia-carpark"
 version = "0.0.0"
 description = "Australian carpark availability integration for Home Assistant (HACS custom component)"
 requires-python = ">=3.14.2"

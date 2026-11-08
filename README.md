@@ -44,7 +44,7 @@ tell you how many were left out.
 
 ## Install (HACS)
 
-1. Open HACS and add a custom repository: `https://github.com/belikh/ha-carpark-australia`
+1. Open HACS and add a custom repository: `https://github.com/belikh/ha-australia-carpark`
    as type **Integration**.
 2. Install **Carpark Australia** and restart Home Assistant.
 3. Add the integration from **Settings → Devices & Services → Add integration**.

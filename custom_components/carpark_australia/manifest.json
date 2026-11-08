@@ -4,10 +4,10 @@
   "codeowners": ["@belikh"],
   "config_flow": true,
   "dependencies": ["zone"],
-  "documentation": "https://github.com/belikh/ha-carpark-australia",
+  "documentation": "https://github.com/belikh/ha-australia-carpark",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/belikh/ha-carpark-australia/issues",
+  "issue_tracker": "https://github.com/belikh/ha-australia-carpark/issues",
   "single_config_entry": true,
   "version": "0.1.0"
 }
