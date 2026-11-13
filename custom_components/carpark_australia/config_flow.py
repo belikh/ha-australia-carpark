@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     EntitySelector,
     EntitySelectorConfig,
@@ -29,6 +31,7 @@ from .const import (
     CONF_SCOPE,
     CONF_SCOPE_RADIUS,
     CONF_SCOPE_ZONE,
+    CONF_TRACKED_CARPARKS,
     DEFAULT_SCOPE_RADIUS,
     DOMAIN,
     MAX_SCAN_INTERVAL_MINUTES,
@@ -39,7 +42,10 @@ from .const import (
     SCOPE_HOME,
     SCOPE_ZONE,
 )
-from .providers import DEFAULT_PROVIDER_KEYS, PROVIDERS
+from .models import Carpark
+from .providers import DEFAULT_PROVIDER_KEYS, PROVIDERS, ProviderContext
+
+_LOGGER = logging.getLogger(__name__)
 
 SCOPE_OPTIONS: list[SelectOptionDict] = [
     {"value": SCOPE_ALL, "label": "All of Australia"},
@@ -127,11 +133,90 @@ class CarparkAustraliaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Choose the providers to poll."""
         if user_input is not None:
             self._data.update(user_input)
-            return await self.async_step_scope()
+            return await self.async_step_select_carparks()
         return self.async_show_form(
             step_id="user",
             data_schema=_providers_schema(list(DEFAULT_PROVIDER_KEYS)),
         )
+
+    async def async_step_select_carparks(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Choose which car parks to track individually.
+
+        The providers are fetched so the user can search and pick the car
+        parks they want their own entities for. Leaving the list empty means
+        only the scope-level sensors are created.
+        """
+        if user_input is not None:
+            selected = [
+                str(value)
+                for value in (user_input.get(CONF_TRACKED_CARPARKS) or [])
+                if value
+            ]
+            self._data[CONF_TRACKED_CARPARKS] = selected
+            return await self.async_step_scope()
+
+        provider_keys = [
+            key
+            for key in self._data.get(CONF_PROVIDERS, [])
+            if key in PROVIDERS
+        ]
+        carparks = await self._fetch_all_carparks(provider_keys)
+        if not carparks:
+            self._data[CONF_TRACKED_CARPARKS] = []
+            return await self.async_step_scope()
+        options: list[SelectOptionDict] = [
+            {
+                "value": carpark.unique_id,
+                "label": f"{carpark.name} ({carpark.operator})",
+            }
+            for carpark in sorted(carparks, key=lambda item: item.name.lower())
+        ]
+        return self.async_show_form(
+            step_id="select_carparks",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_TRACKED_CARPARKS, default=[]
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=options,
+                            multiple=True,
+                            mode=SelectSelectorMode.DROPDOWN,
+                        )
+                    ),
+                }
+            ),
+            description_placeholders={
+                "count": str(len(carparks)),
+            },
+        )
+
+    async def _fetch_all_carparks(self, provider_keys: list[str]) -> list[Carpark]:
+        """Fetch every provider and return their car parks, de-duplicated."""
+        session = async_get_clientsession(self.hass)
+        api_key = self._data.get(CONF_API_KEY, "")
+        carparks: list[Carpark] = []
+        for key in provider_keys:
+            provider = PROVIDERS.get(key)
+            if provider is None:
+                continue
+            context = ProviderContext(
+                session=session,
+                api_key=str(api_key).strip() or None,
+            )
+            try:
+                carparks.extend(await provider.fetch(context))
+            except Exception:  # noqa: BLE001
+                _LOGGER.warning("Provider %s failed during setup", key)
+        seen: set[str] = set()
+        unique: list[Carpark] = []
+        for carpark in carparks:
+            if carpark.unique_id not in seen:
+                seen.add(carpark.unique_id)
+                unique.append(carpark)
+        return unique
 
     async def async_step_scope(
         self, user_input: dict[str, Any] | None = None
@@ -207,6 +292,7 @@ class CarparkAustraliaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         ]
         data = {
             CONF_PROVIDERS: providers or list(DEFAULT_PROVIDER_KEYS),
+            CONF_TRACKED_CARPARKS: self._data.get(CONF_TRACKED_CARPARKS, []),
             CONF_SCAN_INTERVAL: self._data.get(CONF_SCAN_INTERVAL, 15),
             CONF_API_KEY: self._data.get(CONF_API_KEY, ""),
             CONF_SCOPE: self._data.get(CONF_SCOPE, SCOPE_HOME),
@@ -272,13 +358,25 @@ class CarparkAustraliaOptionsFlow(config_entries.OptionsFlow):
             entry.options.get(CONF_PROVIDERS, entry.data.get(CONF_PROVIDERS, []))
         )
         current_radius = _stored_radius(entry)
+        current_tracked = list(
+            entry.options.get(
+                CONF_TRACKED_CARPARKS,
+                entry.data.get(CONF_TRACKED_CARPARKS, []),
+            )
+        )
         if user_input is not None:
             providers = [
                 key for key in user_input.get(CONF_PROVIDERS, []) if key in PROVIDERS
             ]
+            tracked = [
+                str(value)
+                for value in (user_input.get(CONF_TRACKED_CARPARKS) or [])
+                if value
+            ]
             return self.async_create_entry(
                 data={
                     CONF_PROVIDERS: providers or list(DEFAULT_PROVIDER_KEYS),
+                    CONF_TRACKED_CARPARKS: tracked,
                     CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, 15),
                     CONF_API_KEY: user_input.get(CONF_API_KEY, ""),
                     CONF_SCOPE: user_input.get(CONF_SCOPE, SCOPE_HOME),
@@ -288,6 +386,36 @@ class CarparkAustraliaOptionsFlow(config_entries.OptionsFlow):
                     CONF_SCOPE_ZONE: user_input.get(CONF_SCOPE_ZONE, ""),
                 }
             )
+
+        # Fetch providers so the user can search and pick tracked car parks.
+        session = async_get_clientsession(self.hass)
+        api_key = entry.options.get(CONF_API_KEY, entry.data.get(CONF_API_KEY, ""))
+        carparks: list[Carpark] = []
+        for key in current_providers:
+            provider = PROVIDERS.get(key)
+            if provider is None:
+                continue
+            context = ProviderContext(
+                session=session,
+                api_key=str(api_key).strip() or None,
+            )
+            try:
+                carparks.extend(await provider.fetch(context))
+            except Exception:  # noqa: BLE001
+                _LOGGER.warning("Provider %s failed during options setup", key)
+        seen: set[str] = set()
+        unique_carparks: list[Carpark] = []
+        for carpark in carparks:
+            if carpark.unique_id not in seen:
+                seen.add(carpark.unique_id)
+                unique_carparks.append(carpark)
+        options: list[SelectOptionDict] = [
+            {
+                "value": carpark.unique_id,
+                "label": f"{carpark.name} ({carpark.operator})",
+            }
+            for carpark in sorted(unique_carparks, key=lambda item: item.name.lower())
+        ]
 
         schema = _providers_schema(current_providers).extend(
             {
@@ -306,6 +434,16 @@ class CarparkAustraliaOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_SCOPE_ZONE, default=entry.data.get(CONF_SCOPE_ZONE, "")
                 ): EntitySelector(EntitySelectorConfig(domain="zone")),
+                vol.Optional(
+                    CONF_TRACKED_CARPARKS,
+                    default=current_tracked,
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=options,
+                        multiple=True,
+                        mode=SelectSelectorMode.DROPDOWN,
+                    )
+                ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

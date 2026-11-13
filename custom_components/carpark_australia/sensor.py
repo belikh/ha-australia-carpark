@@ -17,19 +17,21 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import CarparkCoordinator, SpaceTotals, count_spaces
 from .const import (
-    ATTR_ADDRESS,
-    ATTR_KIND,
+    ATTR_CARPARKS,
+    ATTR_FREE_CARPARKS,
     ATTR_LAST_UPDATED,
     ATTR_LATITUDE,
     ATTR_LONGITUDE,
     ATTR_OCCUPANCY_PERCENT,
     ATTR_OPERATOR,
+    ATTR_PRICING,
     ATTR_PROVIDER,
     ATTR_SCOPE,
     ATTR_SPACES_FREE,
     ATTR_SPACES_OCCUPIED,
     ATTR_SPACES_TOTAL,
     ATTR_URL,
+    CONF_TRACKED_CARPARKS,
     DOMAIN,
 )
 from .models import Carpark
@@ -37,6 +39,9 @@ from .models import Carpark
 # The catalogue sensor lists every car park in scope. Long lists are cut
 # off so a single attribute does not swamp the recorder database.
 MAX_CATALOGUE_ENTRIES = 500
+# The scope sensor lists the car parks in scope. Long lists are cut off
+# the same way so the attribute stays readable.
+MAX_SCOPE_ENTRIES = 200
 
 
 def device_info(carpark: Carpark) -> DeviceInfo:
@@ -55,20 +60,38 @@ def carpark_attributes(carpark: Carpark) -> dict[str, Any]:
     return {
         ATTR_PROVIDER: carpark.provider,
         ATTR_OPERATOR: carpark.operator,
-        ATTR_KIND: carpark.kind,
+        "kind": carpark.kind,
         ATTR_SPACES_TOTAL: carpark.spaces_total,
         ATTR_SPACES_FREE: carpark.spaces_free,
         ATTR_SPACES_OCCUPIED: carpark.spaces_occupied,
         ATTR_OCCUPANCY_PERCENT: carpark.computed_occupancy_percent,
-        ATTR_ADDRESS: carpark.address,
+        "address": carpark.address,
         ATTR_LATITUDE: carpark.latitude,
         ATTR_LONGITUDE: carpark.longitude,
         ATTR_URL: carpark.url,
+        ATTR_PRICING: carpark.pricing,
         ATTR_LAST_UPDATED: (
             carpark.updated.isoformat()
             if isinstance(carpark.updated, datetime)
             else None
         ),
+    }
+
+
+def carpark_summary(carpark: Carpark) -> dict[str, Any]:
+    """Return a compact summary of one car park for an attribute."""
+    return {
+        "name": carpark.name,
+        "provider": carpark.provider,
+        "operator": carpark.operator,
+        ATTR_SPACES_TOTAL: carpark.spaces_total,
+        ATTR_SPACES_FREE: carpark.spaces_free,
+        ATTR_OCCUPANCY_PERCENT: carpark.computed_occupancy_percent,
+        ATTR_PRICING: carpark.pricing,
+        "address": carpark.address,
+        ATTR_LATITUDE: carpark.latitude,
+        ATTR_LONGITUDE: carpark.longitude,
+        ATTR_URL: carpark.url,
     }
 
 
@@ -195,12 +218,12 @@ class ProviderCatalogueSensor(CoordinatorEntity[CarparkCoordinator], SensorEntit
                 {
                     "name": carpark.name,
                     "operator": carpark.operator,
-                    "spaces_total": carpark.spaces_total,
-                    "spaces_free": carpark.spaces_free,
+                    ATTR_SPACES_TOTAL: carpark.spaces_total,
+                    ATTR_SPACES_FREE: carpark.spaces_free,
                     "address": carpark.address,
-                    "latitude": carpark.latitude,
-                    "longitude": carpark.longitude,
-                    "url": carpark.url,
+                    ATTR_LATITUDE: carpark.latitude,
+                    ATTR_LONGITUDE: carpark.longitude,
+                    ATTR_URL: carpark.url,
                 }
                 for carpark in listed
             ],
@@ -255,14 +278,28 @@ class ScopeTotalsSensor(CoordinatorEntity[CarparkCoordinator], SensorEntity):
         return None
 
     @property
+    def _carparks_in_scope(self) -> list[Carpark]:
+        """Return the car parks in scope, sorted by name."""
+        data = self.coordinator.data
+        if data is None:
+            return []
+        return sorted(data.carparks.values(), key=lambda item: item.name.lower())
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return the breakdown behind the counted value."""
         data = self.coordinator.data
         totals = self._totals
+        carparks = self._carparks_in_scope
+        listed = carparks[:MAX_SCOPE_ENTRIES]
+        free_carparks = [
+            carpark
+            for carpark in carparks
+            if carpark.spaces_free is not None and carpark.spaces_free > 0
+        ]
         counts: dict[str, int] = {}
-        if data is not None:
-            for carpark in data.carparks.values():
-                counts[carpark.provider] = counts.get(carpark.provider, 0) + 1
+        for carpark in carparks:
+            counts[carpark.provider] = counts.get(carpark.provider, 0) + 1
         return {
             ATTR_SCOPE: self.coordinator.scope_description,
             "carparks_tracked": sum(counts.values()),
@@ -270,6 +307,14 @@ class ScopeTotalsSensor(CoordinatorEntity[CarparkCoordinator], SensorEntity):
             "carparks_counted_total": totals.carparks_with_total,
             "carparks_counted_both": totals.carparks_with_both,
             "by_provider": counts,
+            ATTR_CARPARKS: [carpark_summary(carpark) for carpark in listed],
+            ATTR_FREE_CARPARKS: [
+                carpark_summary(carpark)
+                for carpark in free_carparks[:MAX_SCOPE_ENTRIES]
+            ],
+            "carparks_listed": len(listed),
+            "carparks_truncated": len(listed) < len(carparks),
+            "free_carparks_count": len(free_carparks),
             "provider_errors": data.errors if data else {},
             ATTR_LAST_UPDATED: (
                 data.fetched_at.isoformat() if data and data.fetched_at else None
@@ -312,13 +357,20 @@ async def async_setup_entry(
         ScopeTotalsSensor(coordinator, "Car parks tracked", "carparks_tracked"),
     ]
 
+    tracked: set[str] = set(
+        entry.options.get(
+            CONF_TRACKED_CARPARKS,
+            entry.data.get(CONF_TRACKED_CARPARKS, []),
+        )
+    )
+
     known: set[str] = set()
 
     def _add_new(new: list[Carpark]) -> None:
         """Add sensors for car parks that appeared after setup."""
         created: list[SensorEntity] = []
         for carpark in new:
-            if carpark.unique_id in known:
+            if carpark.unique_id in known or carpark.unique_id not in tracked:
                 continue
             known.add(carpark.unique_id)
             created.extend(build_entities(coordinator, carpark))
@@ -327,7 +379,8 @@ async def async_setup_entry(
 
     for carpark in coordinator.data.carparks.values() if coordinator.data else []:
         known.add(carpark.unique_id)
-        entities.extend(build_entities(coordinator, carpark))
+        if carpark.unique_id in tracked:
+            entities.extend(build_entities(coordinator, carpark))
 
     for provider in coordinator.provider_keys:
         entities.append(ProviderCatalogueSensor(coordinator, provider))

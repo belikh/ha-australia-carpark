@@ -11,7 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import CarparkCoordinator
-from .const import DOMAIN
+from .const import CONF_TRACKED_CARPARKS, DOMAIN
 from .models import Carpark
 from .sensor import carpark_attributes, device_info
 
@@ -52,13 +52,23 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Carpark Australia binary sensors."""
     coordinator: CarparkCoordinator = hass.data[DOMAIN][entry.entry_id]
+    tracked: set[str] = set(
+        entry.options.get(
+            CONF_TRACKED_CARPARKS,
+            entry.data.get(CONF_TRACKED_CARPARKS, []),
+        )
+    )
     known: set[str] = set()
 
     def _add_new(new: list[Carpark]) -> None:
         """Add sensors for car parks that appeared after setup."""
         created: list[BinarySensorEntity] = []
         for carpark in new:
-            if carpark.unique_id in known or not carpark.has_availability:
+            if (
+                carpark.unique_id in known
+                or carpark.unique_id not in tracked
+                or not carpark.has_availability
+            ):
                 continue
             known.add(carpark.unique_id)
             created.append(CarparkSpacesAvailableSensor(coordinator, carpark))
@@ -67,7 +77,11 @@ async def async_setup_entry(
 
     entities: list[BinarySensorEntity] = []
     for carpark in coordinator.data.carparks.values() if coordinator.data else []:
-        if carpark.unique_id in known or not carpark.has_availability:
+        if (
+            carpark.unique_id in known
+            or carpark.unique_id not in tracked
+            or not carpark.has_availability
+        ):
             continue
         known.add(carpark.unique_id)
         entities.append(CarparkSpacesAvailableSensor(coordinator, carpark))

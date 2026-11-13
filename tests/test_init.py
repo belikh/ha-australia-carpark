@@ -10,12 +10,17 @@ from homeassistant.helpers import device_registry as dr
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.carpark_australia.const import (
+    ATTR_CARPARKS,
+    ATTR_FREE_CARPARKS,
+    ATTR_SPACES_FREE,
+    ATTR_SPACES_TOTAL,
     CONF_API_KEY,
     CONF_PROVIDERS,
     CONF_SCAN_INTERVAL,
     CONF_SCOPE,
     CONF_SCOPE_RADIUS,
     CONF_SCOPE_ZONE,
+    CONF_TRACKED_CARPARKS,
     DOMAIN,
     SCOPE_ALL,
     SCOPE_HOME,
@@ -55,6 +60,7 @@ CARPARKS = [
 
 ENTRY_DATA = {
     CONF_PROVIDERS: ["adelaide", "wilson", "perth"],
+    CONF_TRACKED_CARPARKS: ["adelaide_rundle-street", "perth_1"],
     CONF_SCAN_INTERVAL: 15,
     CONF_API_KEY: "",
     CONF_SCOPE: SCOPE_ALL,
@@ -69,25 +75,51 @@ def mock_provider_fixture() -> AsyncMock:
     with patch(
         "custom_components.carpark_australia.CarparkCoordinator._fetch_provider",
         new=AsyncMock(return_value=CARPARKS),
-    ) as mocked:
+    ) as mocked, patch(
+        "custom_components.carpark_australia.config_flow.CarparkAustraliaConfigFlow._fetch_all_carparks",
+        new=AsyncMock(return_value=CARPARKS),
+    ):
         yield mocked
 
 
-async def test_setup_entry_creates_entities(
+async def test_setup_entry_creates_tracked_entities(
     hass, mock_provider: AsyncMock
 ) -> None:
-    """Each car park with availability gets a sensor."""
+    """Only tracked car parks get per-car-park entities."""
     entry = MockConfigEntry(domain=DOMAIN, data=ENTRY_DATA, options={})
     entry.add_to_hass(hass)
 
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
+    # Tracked car parks with availability get sensors.
     assert hass.states.get("sensor.rundle_street_spaces_free").state == "614"
     assert hass.states.get("sensor.rundle_street_occupancy").state == "12.3"
     assert hass.states.get("binary_sensor.rundle_street_spaces_available").state == "on"
+
+    # Tracked car park with total but no free gets a total sensor.
     assert hass.states.get("sensor.barrack_street_car_park_total_spaces").state == "120"
-    assert hass.states.get("sensor.car_parks_tracked").state == "3"
+
+    # Untracked car park gets no per-car-park entities.
+    assert hass.states.get("sensor.25_martin_place_car_park_total_spaces") is None
+    assert hass.states.get("binary_sensor.25_martin_place_spaces_available") is None
+
+
+async def test_setup_entry_no_tracked_entities(hass, mock_provider: AsyncMock) -> None:
+    """When no car parks are tracked, no per-car-park entities exist."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={**ENTRY_DATA, CONF_TRACKED_CARPARKS: []},
+        options={},
+    )
+    entry.add_to_hass(hass)
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.rundle_street_spaces_free") is None
+    assert hass.states.get("sensor.barrack_street_car_park_total_spaces") is None
+    assert hass.states.get("binary_sensor.rundle_street_spaces_available") is None
 
 
 async def test_setup_entry_groups_entities_under_devices(
@@ -132,8 +164,37 @@ async def test_setup_entry_counts_spaces(hass, mock_provider: AsyncMock) -> None
     assert attributes["by_provider"] == {"adelaide": 1, "perth": 1, "wilson": 1}
 
 
+async def test_scope_sensor_lists_carparks(hass, mock_provider: AsyncMock) -> None:
+    """The scope sensor attributes list the car parks in scope."""
+    entry = MockConfigEntry(domain=DOMAIN, data=ENTRY_DATA, options={})
+    entry.add_to_hass(hass)
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    attributes = hass.states.get("sensor.parking_spaces_free").attributes
+    carparks = attributes[ATTR_CARPARKS]
+    assert len(carparks) == 3
+    names = {
+        carpark["name"] for carpark in carparks
+    }
+    assert names == {
+        "Rundle Street",
+        "25 Martin Place Car Park",
+        "Barrack Street Car Park",
+    }
+
+    rundle = next(c for c in carparks if c["name"] == "Rundle Street")
+    assert rundle[ATTR_SPACES_FREE] == 614
+    assert rundle[ATTR_SPACES_TOTAL] == 700
+
+    free_carparks = attributes[ATTR_FREE_CARPARKS]
+    assert len(free_carparks) == 1
+    assert free_carparks[0]["name"] == "Rundle Street"
+
+
 async def test_scope_limits_car_parks(hass, mock_provider: AsyncMock) -> None:
-    """Only car parks inside the scope become entities."""
+    """Only car parks inside the scope are counted."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -150,8 +211,6 @@ async def test_scope_limits_car_parks(hass, mock_provider: AsyncMock) -> None:
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    assert hass.states.get("sensor.rundle_street_spaces_free") is not None
-    assert hass.states.get("sensor.25_martin_place_car_park_total_spaces") is None
     assert hass.states.get("sensor.car_parks_tracked").state == "1"
     assert hass.states.get("sensor.parking_spaces_free").state == "614"
     assert (
@@ -217,7 +276,7 @@ async def test_scope_by_a_missing_zone_tracks_nothing(
 
 
 async def test_config_flow(hass, mock_provider: AsyncMock) -> None:
-    """The config flow asks for providers and the area to track."""
+    """The config flow asks for providers, car parks, and the area to track."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
     )
@@ -231,6 +290,14 @@ async def test_config_flow(hass, mock_provider: AsyncMock) -> None:
             CONF_SCAN_INTERVAL: 30,
             CONF_API_KEY: "secret-key",
         },
+    )
+    # After choosing providers, the flow asks which car parks to track.
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "select_carparks"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_TRACKED_CARPARKS: ["adelaide_rundle-street"]},
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "scope"
@@ -247,6 +314,7 @@ async def test_config_flow(hass, mock_provider: AsyncMock) -> None:
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_PROVIDERS] == ["adelaide", "wilson"]
+    assert result["data"][CONF_TRACKED_CARPARKS] == ["adelaide_rundle-street"]
     assert result["data"][CONF_SCOPE_RADIUS] == 2500
 
 
@@ -259,6 +327,12 @@ async def test_config_flow_with_a_zone(hass, mock_provider: AsyncMock) -> None:
         result["flow_id"],
         user_input={CONF_PROVIDERS: ["adelaide"]},
     )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_TRACKED_CARPARKS: []},
+    )
+    assert result["step_id"] == "scope"
+
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={CONF_SCOPE: SCOPE_ZONE},
