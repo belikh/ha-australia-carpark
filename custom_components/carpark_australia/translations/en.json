@@ -18,6 +18,13 @@
           "api_key": "Transport for NSW API key"
         }
       },
+      "select_carparks": {
+        "title": "Car parks to track individually",
+        "description": "Choose the car parks to track with their own entities. Leave empty to only use the scope-level sensors.",
+        "data": {
+          "tracked_carparks": "Car parks"
+        }
+      },
       "scope": {
         "title": "Area to track",
         "description": "Choose the area to count parking spaces in. Tracking every car park in Australia creates a lot of entities.",
@@ -55,6 +62,7 @@
         "description": "Adjust the data sources, the area to track and the refresh interval.",
         "data": {
           "providers": "Data sources",
+          "tracked_carparks": "Car parks to track individually",
           "scan_interval_hours": "Refresh interval (minutes)",
           "api_key": "Transport for NSW API key",
           "scope": "Area",

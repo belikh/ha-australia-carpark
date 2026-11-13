@@ -45,6 +45,7 @@ class Carpark:
     address: str | None = None
     url: str | None = None
     updated: datetime | None = None
+    pricing: str | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
     @property

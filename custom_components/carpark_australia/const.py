@@ -7,6 +7,7 @@ from datetime import timedelta
 DOMAIN = "carpark_australia"
 
 CONF_PROVIDERS = "providers"
+CONF_TRACKED_CARPARKS = "tracked_carparks"
 CONF_SCAN_INTERVAL = "scan_interval_hours"
 CONF_API_KEY = "api_key"
 CONF_SCOPE = "scope"
@@ -39,6 +40,9 @@ ATTR_URL = "url"
 ATTR_KIND = "kind"
 ATTR_LAST_UPDATED = "last_updated"
 ATTR_SCOPE = "scope"
+ATTR_PRICING = "pricing"
+ATTR_CARPARKS = "carparks"
+ATTR_FREE_CARPARKS = "free_carparks"
 
 KIND_CARPARK = "carpark"
 KIND_METER = "parking_meter"

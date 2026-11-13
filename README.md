@@ -3,20 +3,10 @@
 Home Assistant integration for **parking availability across Australia** — every
 council and private operator that publishes its data, in one place.
 
-Each car park becomes a device with its own sensors. The whole network is also
-rolled up into a single count, so you can ask "how many parking spaces are
-free near home?" without reading 600 sensors.
-
-## What you get
-
-**Per car park** (only for car parks that publish something):
-
-| Entity | Type | Meaning |
-| --- | --- | --- |
-| `Spaces free` | sensor | Free spaces right now |
-| `Occupancy` | sensor | Percentage of the car park that is occupied |
-| `Total spaces` | sensor | Capacity, for car parks that publish no live count |
-| `Spaces available` | binary sensor | On when at least one space is free |
+The integration counts parking spaces across the area you choose and exposes a
+single set of roll-up sensors. Each sensor's attributes list the car parks in
+scope, how many spaces are free or occupied at each, and any pricing information
+the source publishes.
 
 **For the whole area in scope**:
 
@@ -38,6 +28,27 @@ The roll-up sensors carry a `scope` attribute naming the area they cover, plus
 `carparks_counted_free`, `carparks_counted_total` and `carparks_counted_both`
 so you can see how many car parks contributed to each figure.
 
+The `carparks` attribute on each roll-up sensor lists every car park in scope
+with its name, operator, free/total/occupied counts, address and any pricing
+information the source publishes. The `free_carparks` attribute lists only the
+car parks that currently have at least one free space. Long lists are truncated
+to keep the attribute readable.
+
+**Per car park (opt-in)**:
+
+During setup you can search and select specific car parks to track
+individually. Each selected car park becomes a device with its own entities:
+
+| Entity | Type | Meaning |
+| --- | --- | --- |
+| `Spaces free` | sensor | Free spaces right now |
+| `Occupancy` | sensor | Percentage of the car park that is occupied |
+| `Total spaces` | sensor | Capacity, for car parks that publish no live count |
+| `Spaces available` | binary sensor | On when at least one space is free |
+
+Leave the selection empty to only use the scope-level sensors. You can change
+the selection later under **Configure** on the integration card.
+
 The catalogue sensor lists at most 500 car parks per source. When a source
 publishes more, the attributes `carpark_count`, `listed_count` and `truncated`
 tell you how many were left out.
@@ -48,7 +59,7 @@ tell you how many were left out.
    as type **Integration**.
 2. Install **Carpark Australia** and restart Home Assistant.
 3. Add the integration from **Settings → Devices & Services → Add integration**.
-4. Choose the data sources and the area to track.
+4. Choose the data sources, any car parks to track individually, and the area to track.
 
 Transport for NSW needs an API key. Register at
 [developer.transport.nsw.gov.au](https://developer.transport.nsw.gov.au/) and
@@ -56,7 +67,7 @@ paste it into the config flow. Every other source is token-free.
 
 ## Choosing an area
 
-Tracking every car park in Australia creates roughly **1,900 entities**. The
+Tracking every car park in Australia creates a lot of entities. The
 config flow asks for the area to count, and you can change it later under
 **Configure** on the integration card.
 
@@ -128,6 +139,10 @@ Counts are as published by each source and change over time.
 - **Car parks without coordinates are skipped when you scope by distance or
   zone.** Every source listed above publishes coordinates except the ACT
   Government polygon layer, whose centroids are used instead.
+- **Pricing information.** None of the current data sources publish a price per
+  hour or per stay. When a source does publish pricing, it will appear in the
+  `pricing` attribute of each car park listed in `carparks` and
+  `free_carparks`.
 
 ## Development
 
