@@ -1,0 +1,17 @@
+{
+  "name": "ha-carpark-australia-docs",
+  "private": true,
+  "description": "Documentation for Carpark Australia (docs.jupiter.au/carpark-australia). One Markdown source (docs-src) becomes the site, repo Markdown and a PDF.",
+  "scripts": {
+    "update:design": "node scripts/update-design.mjs",
+    "check": "jupiter-docs check && jupiter-docs build --check",
+    "build": "jupiter-docs build",
+    "build:site": "jupiter-docs build --site",
+    "build:pdf": "jupiter-docs build --pdf"
+  },
+  "dependencies": {
+    "@belikh/jupiter-docs": "file:../docs/packages/docs",
+    "markdown-it": "14.3.3",
+    "yaml": "2.9.1"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "project": "Carpark Australia",
+  "id": "carpark-australia",
+  "description": "Parking availability across Australia, in Home Assistant.",
+  "versionFrom": "custom_components/carpark_australia/manifest.json",
+  "repo": "https://github.com/belikh/ha-australia-carpark",
+  "siteUrl": "https://docs.jupiter.au/carpark-australia",
+  "author": "belikh",
+  "pdf": "carpark-australia.pdf",
+  "hero": "spot/summit",
+  "sections": [
+    { "id": "use", "title": "Use", "summary": "Install and configure the integration.", "icon": "terminal" },
+    { "id": "build", "title": "Build", "summary": "Entities, data sources and attributes.", "icon": "app" },
+    { "id": "contribute", "title": "Write", "summary": "Develop the integration.", "icon": "edit" }
+  ],
+  "glossary": {
+    "Scope": "The area the integration counts parking spaces in: around the Home Assistant location, inside a zone, or all of Australia.",
+    "Car park": "One parking facility reported by a data source.",
+    "Tracked car park": "A car park you selected to track with its own entities."
+  }
+}

@@ -5,3 +5,11 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 uv.lock
+
+# docs tooling (jupiter-docs)
+node_modules/
+vendor/
+dist/
+docs-src/_imported/
+*.log
+.DS_Store
