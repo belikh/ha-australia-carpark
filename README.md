@@ -1,13 +1,42 @@
+<p align="right">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/belikh/design/main/packages/graphics/logo/jupiter-logo-dark.svg">
+    <img alt="jupiter.au" src="https://raw.githubusercontent.com/belikh/design/main/packages/graphics/logo/jupiter-logo-light.svg" width="260">
+  </picture>
+</p>
+
 # Carpark Australia
 
-Home Assistant integration for **parking availability across Australia** — every
-council and private operator that publishes its data, in one place.
+Home Assistant integration for car park availability in Australia. It reads the car parks that councils and private operators publish and creates a device with sensors for each one. It also adds counts for the whole area you choose, so one sensor can answer how many parking spaces are free near home.
 
-Each car park becomes a device with its own sensors. The whole network is also
-rolled up into a single count, so you can ask "how many parking spaces are
-free near home?" without reading 600 sensors.
+<p>
+  <a href="#install">Install</a> ·
+  <a href="#entities">Entities</a> ·
+  <a href="#choose-an-area">Choose an area</a> ·
+  <a href="#data-sources">Data sources</a> ·
+  <a href="#develop">Develop</a>
+</p>
 
-## What you get
+<br>
+
+---
+
+<br>
+
+## Install
+
+1. In HACS, add a custom repository: `https://github.com/belikh/ha-australia-carpark`, type **Integration**.
+2. Install **Carpark Australia** and restart Home Assistant.
+3. Add the integration from **Settings → Devices & Services → Add integration**.
+4. Choose the data sources and the area to track.
+
+Transport for NSW needs an API key. Register at
+[developer.transport.nsw.gov.au](https://developer.transport.nsw.gov.au/) and
+paste it into the config flow. Every other source is token-free.
+
+<br>
+
+## Entities
 
 **Per car park** (only for car parks that publish something):
 
@@ -42,19 +71,9 @@ The catalogue sensor lists at most 500 car parks per source. When a source
 publishes more, the attributes `carpark_count`, `listed_count` and `truncated`
 tell you how many were left out.
 
-## Install (HACS)
+<br>
 
-1. Open HACS and add a custom repository: `https://github.com/belikh/ha-australia-carpark`
-   as type **Integration**.
-2. Install **Carpark Australia** and restart Home Assistant.
-3. Add the integration from **Settings → Devices & Services → Add integration**.
-4. Choose the data sources and the area to track.
-
-Transport for NSW needs an API key. Register at
-[developer.transport.nsw.gov.au](https://developer.transport.nsw.gov.au/) and
-paste it into the config flow. Every other source is token-free.
-
-## Choosing an area
+## Choose an area
 
 Tracking every car park in Australia creates roughly **1,900 entities**. The
 config flow asks for the area to count, and you can change it later under
@@ -89,8 +108,10 @@ automation:
 The `scope` attribute on each roll-up sensor tells you which area a figure
 covers — the zone name, `within 5000 m of home`, or `Australia`.
 
-**The integration does not create zones.** It only reads the ones you already
-have.
+> [!NOTE]
+> The integration does not create zones. It only reads the ones you already have.
+
+<br>
 
 ## Data sources
 
@@ -107,12 +128,14 @@ have.
 
 Counts are as published by each source and change over time.
 
-### Notes on the data
+<details><summary><b>Notes on the data</b></summary>
 
-- **Brisbane publishes a forecast, not a live count.** The council's occupancy
+<br>
+
+- **Brisbane publishes a forecast.** The council's occupancy
   forecasting dataset predicts how many bays will be occupied for each hour of
   the day, using parking meter transactions and occupancy surveys. Treat the
-  Brisbane figures as an estimate, not a reading.
+  Brisbane figures as estimates.
 - **Adelaide publishes free spaces but no capacity.** Its free-space counts are
   included in `Parking spaces free`, but they are not part of the percentage
   calculation, which needs both figures.
@@ -129,7 +152,11 @@ Counts are as published by each source and change over time.
   zone.** Every source listed above publishes coordinates except the ACT
   Government polygon layer, whose centroids are used instead.
 
-## Development
+</details>
+
+<br>
+
+## Develop
 
 ```bash
 uv sync
@@ -138,8 +165,9 @@ uv run ruff check .
 uv run mypy
 ```
 
-Hassfest can be run with `python -m homeassistant.hassfest` via the script in
-`.github/workflows/`.
+The `hacs` and `hassfest` workflows in `.github/workflows/` run the HACS and Home Assistant validations on GitHub.
+
+<br>
 
 ## Attribution
 
@@ -153,6 +181,12 @@ Hassfest can be run with `python -m homeassistant.hassfest` via the script in
 - Adelaide car park coordinates — © OpenStreetMap contributors, licensed under
   the Open Database License (ODbL).
 
+<br>
+
 ## Licence
 
 MIT. Unofficial; not endorsed by any council or operator.
+
+<br>
+
+<p align="right"><sub>jupiter.au</sub></p>
