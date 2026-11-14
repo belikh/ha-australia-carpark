@@ -1,6 +1,6 @@
 # Carpark Australia
 
-Home Assistant integration for **parking availability across Australia** — every
+Home Assistant integration for **parking availability across Australia**: every
 council and private operator that publishes its data, in one place.
 
 The integration counts parking spaces across the area you choose and exposes a
@@ -79,8 +79,8 @@ config flow asks for the area to count, and you can change it later under
 
 ### Zones
 
-Pick **Inside an existing zone** and choose one of your zones — `zone.home`,
-`zone.work`, a suburb boundary you drew, anything. The integration reads the
+Pick **Inside an existing zone** and choose one of your zones, such as `zone.home`,
+`zone.work` or a suburb boundary you drew. The integration reads the
 zone's latitude, longitude and radius, and counts the parking spaces inside
 it:
 
@@ -98,7 +98,7 @@ automation:
 ```
 
 The `scope` attribute on each roll-up sensor tells you which area a figure
-covers — the zone name, `within 5000 m of home`, or `Australia`.
+covers: the zone name, `within 5000 m of home`, or `Australia`.
 
 **The integration does not create zones.** It only reads the ones you already
 have.
@@ -108,7 +108,7 @@ have.
 | Source | Data | Car parks | Availability |
 | --- | --- | --- | --- |
 | City of Adelaide (UPark) | Free spaces per car park | 10 | Live |
-| Transport for NSW | Occupancy per facility | — | Live, needs an API key |
+| Transport for NSW | Occupancy per facility | Not listed | Live, needs an API key |
 | Brisbane City Council | Occupancy forecast per paid parking zone | 617 | Forecast only |
 | Wilson Parking | Locations, services, EV and accessible parking | 568 | Locations only |
 | City of Sydney | Council car park locations | 2 | Locations only |
@@ -120,17 +120,17 @@ Counts are as published by each source and change over time.
 
 ### Notes on the data
 
-- **Brisbane publishes a forecast, not a live count.** The council's occupancy
+- **Brisbane publishes a forecast.** It has no live count. The council's occupancy
   forecasting dataset predicts how many bays will be occupied for each hour of
   the day, using parking meter transactions and occupancy surveys. Treat the
-  Brisbane figures as an estimate, not a reading.
+  Brisbane figures as an estimate.
 - **Adelaide publishes free spaces but no capacity.** Its free-space counts are
   included in `Parking spaces free`, but they are not part of the percentage
   calculation, which needs both figures.
 - **Several sources publish locations only.** Wilson Parking, the City of
   Sydney, the ACT Government and the City of Hobart do not publish live
-  availability, so those car parks appear in the `Car parks (<provider>)`
-  catalogue sensor and count towards `Car parks tracked`, but produce no
+  availability. Their car parks appear in the `Car parks (<provider>)`
+  catalogue sensor and count towards `Car parks tracked`. They produce no
   per-park sensors.
 - **Private operators are included.** Wilson Parking operates car parks in
   every state and territory and is listed as a source in its own right, with
@@ -158,14 +158,14 @@ Hassfest can be run with `python -m homeassistant.hassfest` via the script in
 
 ## Attribution
 
-- City of Adelaide UPark availability reports — City of Adelaide open data.
-- Brisbane City Council parking meter and occupancy forecasting data — Brisbane
+- City of Adelaide UPark availability reports: City of Adelaide open data.
+- Brisbane City Council parking meter and occupancy forecasting data: Brisbane
   City Council open data, CC BY 4.0.
 - City of Sydney, City of Perth, ACT Government and City of Hobart car park
-  data — the relevant council's ArcGIS open data service.
-- Transport for NSW car park data — Transport for NSW Car Park API.
-- Wilson Parking car park details — wilsonparking.com.au.
-- Adelaide car park coordinates — © OpenStreetMap contributors, licensed under
+  data: the relevant council's ArcGIS open data service.
+- Transport for NSW car park data: Transport for NSW Car Park API.
+- Wilson Parking car park details: wilsonparking.com.au.
+- Adelaide car park coordinates: © OpenStreetMap contributors, licensed under
   the Open Database License (ODbL).
 
 ## Licence

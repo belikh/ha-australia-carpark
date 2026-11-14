@@ -4,9 +4,9 @@
 
 The config flow asks for:
 
-1. **Data sources** — the providers to poll. Only selected providers are polled on each refresh.
-2. **Tracked car parks** — optional. Search and select specific car parks to track with their own entities. Leave empty to only use the scope-level sensors.
-3. **Area to track** — around the Home Assistant location, inside a zone, or all of Australia.
+1. **Data sources**: the providers to poll. Only selected providers are polled on each refresh.
+2. **Tracked car parks**: optional. Search and select specific car parks to track with their own entities. Leave empty to only use the scope-level sensors.
+3. **Area to track**: around the Home Assistant location, inside a zone, or all of Australia.
 
 ## Area to track
 
@@ -20,7 +20,7 @@ Tracking every car park in Australia creates a lot of entities. Choose the area 
 
 ### Zones
 
-Pick **Inside an existing zone** and choose one of your zones — `zone.home`, `zone.work`, a suburb boundary you drew, anything. The integration reads the zone's latitude, longitude and radius, and counts the parking spaces inside it:
+Pick **Inside an existing zone** and choose one of your zones, such as `zone.home`, `zone.work` or a suburb boundary you drew. The integration reads the zone's latitude, longitude and radius, and counts the parking spaces inside it:
 
 **Find parking before I leave work**
 
@@ -37,7 +37,7 @@ automation:
           message: "Only {{ states('sensor.parking_spaces_free') }} parking spaces free near work."
 ```
 
-The `scope` attribute on each roll-up sensor tells you which area a figure covers — the zone name, `within 5000 m of home`, or `Australia`.
+The `scope` attribute on each roll-up sensor tells you which area a figure covers: the zone name, `within 5000 m of home`, or `Australia`.
 
 **The integration does not create zones.** It only reads the ones you already have.
 

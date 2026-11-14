@@ -5,7 +5,7 @@
 | Source | Data | Car parks | Availability |
 | --- | --- | --- | --- |
 | City of Adelaide (UPark) | Free spaces per car park | 10 | Live |
-| Transport for NSW | Occupancy per facility | — | Live, needs an API key |
+| Transport for NSW | Occupancy per facility | Not listed | Live, needs an API key |
 | Brisbane City Council | Occupancy forecast per paid parking zone | 617 | Forecast only |
 | Wilson Parking | Locations, services, EV and accessible parking | 568 | Locations only |
 | City of Sydney | Council car park locations | 2 | Locations only |
@@ -17,9 +17,9 @@ Counts are as published by each source and change over time.
 
 ## Notes on the data
 
-- **Brisbane publishes a forecast, not a live count.** The council's occupancy forecasting dataset predicts how many bays will be occupied for each hour of the day, using parking meter transactions and occupancy surveys. Treat the Brisbane figures as an estimate, not a reading.
+- **Brisbane publishes a forecast.** It has no live count. The council's occupancy forecasting dataset predicts how many bays will be occupied for each hour of the day, using parking meter transactions and occupancy surveys. Treat the Brisbane figures as an estimate.
 - **Adelaide publishes free spaces but no capacity.** Its free-space counts are included in `Parking spaces free`, but they are not part of the percentage calculation, which needs both figures.
-- **Several sources publish locations only.** Wilson Parking, the City of Sydney, the ACT Government and the City of Hobart do not publish live availability, so those car parks appear in the `Car parks (<provider>)` catalogue sensor and count towards `Car parks tracked`, but produce no per-park sensors.
+- **Several sources publish locations only.** Wilson Parking, the City of Sydney, the ACT Government and the City of Hobart do not publish live availability. Their car parks appear in the `Car parks (<provider>)` catalogue sensor and count towards `Car parks tracked`. They produce no per-park sensors.
 - **Private operators are included.** Wilson Parking operates car parks in every state and territory and is listed as a source in its own right, with the services each site offers (monthly parking, book-a-bay, EV charging, accessible parking).
 - **Car parks without coordinates are skipped when you scope by distance or zone.** Every source listed above publishes coordinates except the ACT Government polygon layer, whose centroids are used instead.
 - **Pricing information.** None of the current data sources publish a price per hour or per stay. When a source does publish pricing, it will appear in the `pricing` attribute of each car park listed in `carparks` and `free_carparks`.

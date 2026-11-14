@@ -13,12 +13,12 @@ Hassfest can be run with `python -m homeassistant.hassfest` via the script in `.
 
 ## Attribution
 
-- City of Adelaide UPark availability reports — City of Adelaide open data.
-- Brisbane City Council parking meter and occupancy forecasting data — Brisbane City Council open data, CC BY 4.0.
-- City of Sydney, City of Perth, ACT Government and City of Hobart car park data — the relevant council's ArcGIS open data service.
-- Transport for NSW car park data — Transport for NSW Car Park API.
-- Wilson Parking car park details — wilsonparking.com.au.
-- Adelaide car park coordinates — © OpenStreetMap contributors, licensed under the Open Database License (ODbL).
+- City of Adelaide UPark availability reports: City of Adelaide open data.
+- Brisbane City Council parking meter and occupancy forecasting data: Brisbane City Council open data, CC BY 4.0.
+- City of Sydney, City of Perth, ACT Government and City of Hobart car park data: the relevant council's ArcGIS open data service.
+- Transport for NSW car park data: Transport for NSW Car Park API.
+- Wilson Parking car park details: wilsonparking.com.au.
+- Adelaide car park coordinates: © OpenStreetMap contributors, licensed under the Open Database License (ODbL).
 
 ## Licence
 
